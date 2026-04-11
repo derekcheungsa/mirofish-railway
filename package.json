@@ -1,6 +1,6 @@
 {
-  "name": "mirofish-railway-template",
-  "private": true,
+  "name": "mirofish-railway",
+  "version": "0.1.0",
   "type": "module",
   "engines": {
     "node": ">=18"
@@ -14,11 +14,11 @@
     "setup:backend": "cd backend && uv sync",
     "setup:all": "npm run setup && npm run setup:backend",
     "lint": "node -c src/server.js",
-    "start": "npm run dev"
+    "start": "bash scripts/start.sh"
   },
   "dependencies": {
+    "concurrently": "^9.1.2",
     "express": "^5.1.0",
-    "http-proxy": "^1.18.1",
-    "concurrently": "^9.1.2"
+    "http-proxy": "^1.18.1"
   }
 }

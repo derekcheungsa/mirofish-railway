@@ -1,6 +1,6 @@
 FROM python:3.11
 
-# Install Node.js 18 + git + pip (for uv)
+# Install Node.js 18 + git
 RUN apt-get update && apt-get install -y curl git \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
@@ -10,23 +10,28 @@ RUN apt-get update && apt-get install -y curl git \
 # Install uv via pip
 RUN pip install uv
 
-# Clone MiroFish into /app
 WORKDIR /app
+
+# Clone MiroFish into /app
 RUN git clone --depth 1 --branch main https://github.com/666ghj/MiroFish.git .
 
-# Copy our Express wrapper on top of MiroFish (overwrites root files only)
+# Copy our Express wrapper on top of MiroFish
 COPY package.json ./package.json
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 
-# Ensure MiroFish subdirectory files are intact
-RUN test -f backend/uv.lock || touch backend/uv.lock \
-    && test -f frontend/package-lock.json || true
+# Ensure placeholder files exist for MiroFish
+RUN test -f backend/uv.lock || touch backend/uv.lock
 
-# Install all dependencies (MiroFish + our Express wrapper)
-RUN npm ci \
-    && npm run setup \
-    && uv sync --frozen --directory backend 2>/dev/null || uv sync --directory backend
+# ==========================================================
+# Install ALL deps in one place (/app/node_modules)
+# Our package.json merge-strategies over MiroFish's root deps,
+# but we keep MiroFish's subdir deps intact.
+# ==========================================================
+RUN cd /app \
+    && npm install \
+    && cd frontend && npm install \
+    && cd ../backend && uv sync --frozen 2>/dev/null || uv sync
 
 EXPOSE 3000 5001 8080
 
