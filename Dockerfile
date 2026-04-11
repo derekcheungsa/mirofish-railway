@@ -27,8 +27,35 @@ RUN cd /app && npm install
 RUN cd /app/frontend && npm install
 RUN cd /app/backend && uv sync --frozen 2>/dev/null || uv sync
 
-# Step 5: Patch Vite config at BUILD TIME to allow Railway's host
-RUN sed -i "s/    open: true,/    open: true,\n    allowedHosts: ['all'],/" /app/frontend/vite.config.js
+# Step 5: Replace Vite config with patched version (allows Railway host)
+RUN cat > /app/frontend/vite.config.js << 'VITEEOF'
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import path from 'path'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@locales': path.resolve(__dirname, '../locales')
+    }
+  },
+  server: {
+    port: 3000,
+    open: true,
+    allowedHosts: ['all'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  }
+})
+VITEEOF
 
 EXPOSE 3000 5001 8080
 
