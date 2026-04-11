@@ -123,7 +123,7 @@ app.post("/setup/api/configure", requireSetupAuth, async (req, res) => {
     console.log(`[setup] Configuration saved to ${envPath}`);
 
     // Configure MiroFish frontend to use backend
-    const backendHost = RAILENDPOINT || `localhost:${BACKEND_PORT}`;
+    const backendHost = RAILWAY_PUBLIC_DOMAIN || `localhost:${BACKEND_PORT}`;
     const frontendEnvPath = path.join(DATA_DIR, "frontend.env");
     fs.writeFileSync(frontendEnvPath, `VITE_API_BASE=http://localhost:${BACKEND_PORT}\n`, "utf8");
 

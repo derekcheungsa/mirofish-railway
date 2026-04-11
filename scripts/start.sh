@@ -5,13 +5,7 @@ set -e
 
 echo "[startup] MiroFish Railway Template starting..."
 
-# Patch Vite config to allow all hosts (simplest fix for Railway)
-if grep -q "allowedHosts" /app/frontend/vite.config.js 2>/dev/null; then
-    echo "[startup] allowedHosts already configured"
-else
-    echo "[startup] Patching Vite allowedHosts..."
-    sed -i "s/open: true,/open: true,\n    allowedHosts: ['all'],/" /app/frontend/vite.config.js
-fi
+# Vite config is patched at BUILD time in Dockerfile — no sed at startup
 
 # Start MiroFish backend (Python/Flask on 5001) in background
 cd /app
