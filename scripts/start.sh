@@ -1,11 +1,9 @@
 #!/bin/bash
-# MiroFish + Express Wrapper Startup Script
+# MiroFish + Express Wrapper Startup Script (Production Mode)
 
 set -e
 
 echo "[startup] MiroFish Railway Template starting..."
-
-# Vite config is patched at BUILD time in Dockerfile — no sed at startup
 
 # Start MiroFish backend (Python/Flask on 5001) in background
 cd /app
@@ -15,16 +13,9 @@ BACKEND_PID=$!
 cd /app
 echo "[startup] Backend started (PID $BACKEND_PID)"
 
-# Start MiroFish frontend (Vite on 3000) in background
-echo "[startup] Starting MiroFish frontend..."
-cd frontend && npm run dev &
-FRONTEND_PID=$!
-cd /app
-echo "[startup] Frontend started (PID $FRONTEND_PID)"
+# Give backend time to start
+sleep 3
 
-# Give services time to bind
-sleep 5
-
-# Start Express wrapper (proxies frontend + backend, serves /setup)
-echo "[startup] Starting setup wizard wrapper on port $PORT..."
+# Start Express wrapper — serves built frontend static files + /setup wizard
+echo "[startup] Starting Express wrapper on port $PORT..."
 exec node src/server.js

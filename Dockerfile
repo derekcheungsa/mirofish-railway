@@ -1,35 +1,32 @@
 FROM python:3.11
 
-# Install Node.js 22 (one-time apt layer — Railway caches this)
+# Install Node.js 22
 RUN apt-get update && apt-get install -y --no-install-recommends curl git \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install uv
 RUN pip install uv
 
 WORKDIR /app
 
-# Step 1: Clone MiroFish FIRST (can't clone into non-empty dir)
+# Clone MiroFish
 RUN git clone --depth 1 --branch main https://github.com/666ghj/MiroFish.git .
 
-# Step 2: Overlay our Express wrapper files on top of MiroFish
+# Overlay our files
 COPY package.json ./package.json
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+COPY frontend/vite.config.js ./frontend/vite.config.js
 
-# Step 3: Ensure placeholder files exist for MiroFish
+# Ensure placeholder files exist for MiroFish
 RUN test -f backend/uv.lock || touch backend/uv.lock
 
-# Step 4: Copy our patched vite.config.js to override MiroFish's default
-COPY frontend/vite.config.js /app/frontend/vite.config.js
-
-# Step 5: npm install — first build populates, subsequent builds use Docker cache
+# Install deps and build frontend into static files
 RUN cd /app && npm install
-RUN cd /app/frontend && npm install
+RUN cd /app/frontend && npm install && npm run build
 RUN cd /app/backend && uv sync --frozen 2>/dev/null || uv sync
 
-EXPOSE 3000 5001 8080
+EXPOSE 8080
 
 CMD ["bash", "scripts/start.sh"]

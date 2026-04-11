@@ -4,9 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const PORT = Number.parseInt(process.env.PORT ?? "8080", 10);
-const FRONTEND_PORT = Number.parseInt(process.env.FRONTEND_PORT ?? "3000", 10);
 const BACKEND_PORT = Number.parseInt(process.env.BACKEND_PORT ?? "5001", 10);
-const FRONTEND_TARGET = `http://127.0.0.1:${FRONTEND_PORT}`;
 const BACKEND_TARGET = `http://127.0.0.1:${BACKEND_PORT}`;
 
 // Railway provides these
@@ -23,12 +21,24 @@ const LLM_BASE_URL = process.env.LLM_BASE_URL?.trim();
 const LLM_MODEL_NAME = process.env.LLM_MODEL_NAME?.trim();
 
 console.log(`[mirofish] Starting at port ${PORT}`);
-console.log(`[mirofish] Frontend: ${FRONTEND_TARGET}, Backend: ${BACKEND_TARGET}`);
+console.log(`[mirofish] Backend: ${BACKEND_TARGET}`);
 console.log(`[mirofish] Public URL: ${PUBLIC_URL || "not configured"}`);
 
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
+
+// ============================================
+// Static Files — serve built Vue frontend
+// ============================================
+
+const distPath = "/app/frontend/dist";
+app.use(express.static(distPath));
+
+// SPA fallback — serve index.html for client-side routing
+app.get("*", (req, res) => {
+  res.sendFile(path.join(distPath, "index.html"));
+});
 
 // ============================================
 // Setup Wizard Auth Middleware
@@ -113,7 +123,6 @@ app.post("/setup/api/configure", requireSetupAuth, async (req, res) => {
       `ZEP_API_KEY=${zepApiKey || process.env.ZEP_API_KEY || ""}`,
       `SECRET_KEY=${process.env.SECRET_KEY || "mirofish-dev-secret-change-me"}`,
       `BACKEND_PORT=${BACKEND_PORT}`,
-      `FRONTEND_PORT=${FRONTEND_PORT}`,
     ];
 
     const envContent = lines.join("\n") + "\n";
@@ -121,11 +130,6 @@ app.post("/setup/api/configure", requireSetupAuth, async (req, res) => {
     fs.writeFileSync(envPath, envContent, { mode: 0o600 });
 
     console.log(`[setup] Configuration saved to ${envPath}`);
-
-    // Configure MiroFish frontend to use backend
-    const backendHost = RAILWAY_PUBLIC_DOMAIN || `localhost:${BACKEND_PORT}`;
-    const frontendEnvPath = path.join(DATA_DIR, "frontend.env");
-    fs.writeFileSync(frontendEnvPath, `VITE_API_BASE=http://localhost:${BACKEND_PORT}\n`, "utf8");
 
     res.json({
       ok: true,
@@ -143,7 +147,6 @@ app.post("/setup/api/configure", requireSetupAuth, async (req, res) => {
 });
 
 app.get("/setup/api/models", requireSetupAuth, (_req, res) => {
-  // Popular OpenRouter models for MiroFish
   const models = [
     { id: "openai/gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", contextWindow: 128000, inputPrice: 0.15, outputPrice: 0.60 },
     { id: "openai/gpt-4o", name: "GPT-4o", provider: "OpenAI", contextWindow: 128000, inputPrice: 2.50, outputPrice: 10.00 },
@@ -152,7 +155,7 @@ app.get("/setup/api/models", requireSetupAuth, (_req, res) => {
     { id: "google/gemini-2.5-pro-preview", name: "Gemini 2.5 Pro", provider: "Google", contextWindow: 1048576, inputPrice: 1.25, outputPrice: 10.00 },
     { id: "google/gemini-3-flash-preview", name: "Gemini 3 Flash", provider: "Google", contextWindow: 1048576, inputPrice: 0.10, outputPrice: 0.40 },
     { id: "deepseek/deepseek-chat-v3-0324", name: "DeepSeek V3", provider: "DeepSeek", contextWindow: 131072, inputPrice: 0.27, outputPrice: 1.10 },
-    { id: "meta-llama/llama-3-3-70b-instruct", name: "Llama 3.3 70B", provider: "Meta", contextWindow: 131072, inputPrice: 0.40, outputPrice: 0.90 },
+    { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", provider: "Meta", contextWindow: 131072, inputPrice: 0.40, outputPrice: 0.90 },
     { id: "mistralai/mistral-nemo", name: "Mistral Nemo", provider: "Mistral", contextWindow: 128000, inputPrice: 0.15, outputPrice: 0.15 },
     { id: "qwen/qwen-3.5-397ba17b", name: "Qwen 3.5", provider: "Qwen", contextWindow: 262144, inputPrice: 0.50, outputPrice: 2.00 },
   ];
@@ -171,7 +174,7 @@ app.post("/setup/api/reset", requireSetupAuth, async (_req, res) => {
 });
 
 // ============================================
-// Proxies
+// API Proxy → Backend (5001)
 // ============================================
 
 const apiProxy = httpProxy.createProxyServer({
@@ -180,23 +183,10 @@ const apiProxy = httpProxy.createProxyServer({
   xfwd: false,
 });
 
-const frontendProxy = httpProxy.createProxyServer({
-  target: FRONTEND_TARGET,
-  ws: true,
-  xfwd: false,
-});
-
 apiProxy.on("error", (err, _req, res) => {
   console.error("[api-proxy]", err?.message || err);
   if (!res.headersSent) {
     res.status(502).json({ ok: false, error: "Backend error" });
-  }
-});
-
-frontendProxy.on("error", (err, _req, res) => {
-  console.error("[frontend-proxy]", err?.message || err);
-  if (!res.headersSent) {
-    res.status(502).json({ ok: false, error: "Frontend error" });
   }
 });
 
@@ -217,11 +207,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Everything else → frontend (3000)
-app.use((req, res) => {
-  frontendProxy.web(req, res, { target: FRONTEND_TARGET });
-});
-
 // ============================================
 // Server
 // ============================================
@@ -230,15 +215,11 @@ const server = app.listen(PORT, () => {
   console.log(`[mirofish] Listening on port ${PORT}`);
   console.log(`[mirofish] Setup wizard: http://localhost:${PORT}/setup`);
   console.log(`[mirofish] API → ${BACKEND_TARGET}`);
-  console.log(`[mirofish] Frontend → ${FRONTEND_TARGET}`);
 });
 
 server.on("upgrade", (req, socket, head) => {
-  // Route WebSocket upgrades based on path
   if (req.url?.includes("/ws") || req.url?.includes("websocket")) {
     apiProxy.ws(req, socket, head, { target: BACKEND_TARGET });
-  } else {
-    frontendProxy.ws(req, socket, head, { target: FRONTEND_TARGET });
   }
 });
 
