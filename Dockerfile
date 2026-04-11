@@ -22,14 +22,13 @@ COPY scripts/ ./scripts/
 # Step 3: Ensure placeholder files exist for MiroFish
 RUN test -f backend/uv.lock || touch backend/uv.lock
 
-# Step 4: npm install — first build populates, subsequent builds use Docker cache
+# Step 4: Copy our patched vite.config.js to override MiroFish's default
+COPY frontend/vite.config.js /app/frontend/vite.config.js
+
+# Step 5: npm install — first build populates, subsequent builds use Docker cache
 RUN cd /app && npm install
 RUN cd /app/frontend && npm install
 RUN cd /app/backend && uv sync --frozen 2>/dev/null || uv sync
-
-# Step 5: Patch vite.config.js — add allowedHosts for Railway at startup
-# (done here at build time so the file is ready when container starts)
-RUN sed -i "s|    proxy: {|    allowedHosts: ['.railway.app', '.up.railway.app'],\n    proxy: |" /app/frontend/vite.config.js
 
 EXPOSE 3000 5001 8080
 
