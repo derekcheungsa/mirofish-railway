@@ -1,8 +1,8 @@
 FROM python:3.11
 
-# Install Node.js 18 + git
+# Install Node.js 22 (Vite requires 20.19+ or 22.12+)
 RUN apt-get update && apt-get install -y curl git \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -23,11 +23,7 @@ COPY scripts/ ./scripts/
 # Ensure placeholder files exist for MiroFish
 RUN test -f backend/uv.lock || touch backend/uv.lock
 
-# ==========================================================
-# Install ALL deps in one place (/app/node_modules)
-# Our package.json merge-strategies over MiroFish's root deps,
-# but we keep MiroFish's subdir deps intact.
-# ==========================================================
+# Install all deps: root wrapper + frontend + backend
 RUN cd /app \
     && npm install \
     && cd frontend && npm install \
