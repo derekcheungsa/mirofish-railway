@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiroFish Setup</title>
+  <link rel="stylesheet" href="/setup/styles.css">
+</head>
+<body>
+  <div class="setup-container">
+    <div class="setup-header">
+      <div class="logo">🐟 MiroFish</div>
+      <h1>Setup Wizard</h1>
+      <p class="subtitle">Multi-Agent AI Simulation Engine</p>
+    </div>
+
+    <div id="setup-content">
+      <!-- Status Panel -->
+      <div class="panel" id="status-panel">
+        <h2>Configuration Status</h2>
+        <div id="status-content">
+          <div class="spinner"></div>
+          <p>Checking configuration...</p>
+        </div>
+      </div>
+
+      <!-- Config Panel (hidden if configured) -->
+      <div class="panel hidden" id="config-panel">
+        <h2>Configure MiroFish</h2>
+
+        <form id="config-form">
+          <div class="form-section">
+            <h3>🤖 LLM Provider</h3>
+            <p class="help-text">Connect to OpenRouter to access 300+ AI models through a single API.</p>
+
+            <div class="form-group">
+              <label for="provider">Provider</label>
+              <select id="provider" name="provider">
+                <option value="openrouter">OpenRouter (Recommended)</option>
+                <option value="openai">OpenAI Direct</option>
+                <option value="anthropic">Anthropic Direct</option>
+                <option value="custom">Custom OpenAI-Compatible</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="llm-api-key">API Key</label>
+              <input type="password" id="llm-api-key" name="llmApiKey" placeholder="sk-or-..." required>
+              <span class="help-text">Get your key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></span>
+            </div>
+
+            <div class="form-group">
+              <label for="llm-model">Model</label>
+              <select id="llm-model" name="llmModelName">
+                <option value="openai/gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+                <option value="openai/gpt-4o">GPT-4o (Powerful)</option>
+                <option value="anthropic/claude-3-5-sonnet-latest">Claude 3.5 Sonnet</option>
+                <option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro</option>
+                <option value="deepseek/deepseek-chat-v3-0324">DeepSeek V3 (Cheap)</option>
+              </select>
+              <span class="help-text">300+ models available on OpenRouter</span>
+            </div>
+
+            <div class="form-group" id="custom-url-group" class="hidden">
+              <label for="llm-base-url">Base URL</label>
+              <input type="text" id="llm-base-url" name="llmBaseUrl" placeholder="https://openrouter.ai/api/v1">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>🧠 Agent Memory (Optional)</h3>
+            <p class="help-text">Zep Cloud provides long-term memory for agents. Get a free key at <a href="https://console.zep.cloud/" target="_blank">console.zep.cloud</a></p>
+
+            <div class="form-group">
+              <label for="zep-api-key">Zep API Key</label>
+              <input type="password" id="zep-api-key" name="zepApiKey" placeholder="zep_...">
+              <span class="help-text">Optional - enables agent memory and persistence</span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="submit-btn" class="btn-primary">
+              <span class="btn-text">Save Configuration</span>
+              <span class="spinner hidden"></span>
+            </button>
+          </div>
+        </form>
+
+        <div id="error-message" class="error hidden"></div>
+      </div>
+
+      <!-- Success Panel (shown if configured) -->
+      <div class="panel hidden" id="success-panel">
+        <div class="success-icon">✓</div>
+        <h2>Configured!</h2>
+        <p>MiroFish is ready to use.</p>
+        <div id="app-url-container">
+          <a id="app-url" href="#" target="_blank" class="btn-primary">Open MiroFish</a>
+        </div>
+        <div class="form-actions">
+          <button id="reset-btn" class="btn-secondary">Reset Configuration</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-footer">
+      <p>MiroFish + OpenRouter • AI Prediction Engine</p>
+    </div>
+  </div>
+
+  <script src="/setup/app.js"></script>
+</body>
+</html>

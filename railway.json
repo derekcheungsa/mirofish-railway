@@ -1,0 +1,24 @@
+{
+  "$schema": "https://railway.app/schema.json",
+  "build": {
+    "dockerfilePath": "Dockerfile",
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "singleInstance": true,
+    "healthCheckPath": "/setup/healthz"
+  },
+  "proxies": {
+    "web": {
+      "port": 8080,
+      "disabled": false
+    }
+  },
+  "volumes": [
+    {
+      "mountPath": "/data",
+      "name": "mirofish-data"
+    }
+  ]
+}
