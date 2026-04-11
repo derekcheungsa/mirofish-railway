@@ -1,14 +1,14 @@
 FROM python:3.11
 
-# Install Node.js 18 + git + npm
+# Install Node.js 18 + git + pip (for uv)
 RUN apt-get update && apt-get install -y curl git \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (Python package manager)
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /bin/uv /bin/uv
+# Install uv via pip
+RUN pip install uv
 
 # Clone MiroFish into /app
 WORKDIR /app
@@ -19,7 +19,7 @@ COPY package.json ./package.json
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 
-# Ensure MiroFish subdirectory files are intact (in case COPY overwrote them)
+# Ensure MiroFish subdirectory files are intact
 RUN test -f backend/uv.lock || touch backend/uv.lock \
     && test -f frontend/package-lock.json || true
 
