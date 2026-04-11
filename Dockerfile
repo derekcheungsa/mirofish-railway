@@ -1,7 +1,7 @@
 FROM python:3.11
 
-# Install Node.js 18
-RUN apt-get update && apt-get install -y curl \
+# Install Node.js 18 + git + npm
+RUN apt-get update && apt-get install -y curl git \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
@@ -10,23 +10,23 @@ RUN apt-get update && apt-get install -y curl \
 # Install uv (Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:0.9.26 /bin/uv /bin/uv
 
+# Clone MiroFish into /app
 WORKDIR /app
+RUN git clone --depth 1 --branch main https://github.com/666ghj/MiroFish.git .
 
-# Copy dependency files for install
-COPY package.json package-lock.json* ./
-COPY frontend/package*.json ./frontend/
-COPY backend/pyproject.toml ./backend/
+# Copy our Express wrapper on top of MiroFish (overwrites root files only)
+COPY package.json ./package.json
+COPY src/ ./src/
+COPY scripts/ ./scripts/
 
-# uv.lock is optional - create placeholder if missing
-RUN test -f backend/uv.lock || touch backend/uv.lock
+# Ensure MiroFish subdirectory files are intact (in case COPY overwrote them)
+RUN test -f backend/uv.lock || touch backend/uv.lock \
+    && test -f frontend/package-lock.json || true
 
-# Install dependencies
+# Install all dependencies (MiroFish + our Express wrapper)
 RUN npm ci \
     && npm run setup \
     && uv sync --frozen --directory backend 2>/dev/null || uv sync --directory backend
-
-# Copy source
-COPY . .
 
 EXPOSE 3000 5001 8080
 
