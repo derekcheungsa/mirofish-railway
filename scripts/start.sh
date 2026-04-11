@@ -5,10 +5,12 @@ set -e
 
 echo "[startup] MiroFish Railway Template starting..."
 
-# Patch Vite config to allow Railway's public domain
-if [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then
-    echo "[startup] Patching Vite allowedHosts for $RAILWAY_PUBLIC_DOMAIN..."
-    sed -i "s/| undefined/| '$RAILWAY_PUBLIC_DOMAIN'/" /app/frontend/vite.config.js 2>/dev/null || true
+# Patch Vite config to allow all hosts (simplest fix for Railway)
+if grep -q "allowedHosts" /app/frontend/vite.config.js 2>/dev/null; then
+    echo "[startup] allowedHosts already configured"
+else
+    echo "[startup] Patching Vite allowedHosts..."
+    sed -i "s/open: true,/open: true,\n    allowedHosts: ['all'],/" /app/frontend/vite.config.js
 fi
 
 # Start MiroFish backend (Python/Flask on 5001) in background
