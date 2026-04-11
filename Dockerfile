@@ -27,8 +27,8 @@ RUN cd /app && npm install
 RUN cd /app/frontend && npm install
 RUN cd /app/backend && uv sync --frozen 2>/dev/null || uv sync
 
-# Step 5: Patch Vite config at BUILD TIME (not at startup)
-RUN sed -i "s/open: true,/open: true,\n    allowedHosts: ['all'],/" /app/frontend/vite.config.js || true
+# Step 5: Patch Vite config at BUILD TIME to allow Railway's host
+RUN sed -i "s/    open: true,/    open: true,\n    allowedHosts: ['all'],/" /app/frontend/vite.config.js
 
 EXPOSE 3000 5001 8080
 
